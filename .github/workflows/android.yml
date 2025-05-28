@@ -1,0 +1,42 @@
+name: Android CI
+
+on:
+  push:
+    branches:
+      - chat-ui
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Gradle
+        run: sudo apt-get update && sudo apt-get install -y gradle
+
+      - name: Generate Wrapper
+        run: gradle wrapper --gradle-version 8.3
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sage-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Upload APK to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: app/build/outputs/apk/debug/*.apk
+          tag: v1.0.0
+          overwrite: true
