@@ -32,3 +32,11 @@ jobs:
         with:
           name: Sage-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+
+      - name: Upload APK to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: app/build/outputs/apk/debug/*.apk
+          tag: v1.0.0
+          overwrite: true
