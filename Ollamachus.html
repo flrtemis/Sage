@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Service Connector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        dark: '#1F2937',
+                        light: '#F9FAFB'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            .connection-status-connected { -webkit-animation: pulse 2s infinite; }
+            @keyframes pulse {
+                0% { opacity: 1.0; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1.0; }
+            }
+            .log-entry:nth-child(odd) { @apply bg-gray-50 dark:bg-gray-800; }
+            .log-entry:nth-child(even) { @apply bg-white dark:bg-gray-900; }
+        }
+        @layer utilities {
+            .scrollbar-hidden::-webkit-scrollbar { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2 flex items-center">
+                <i data-feather="server" class="mr-3 text-primary"></i>
+                Local Service Connector
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400">
+                Connect and communicate with your local service at 127.0.0.1:11434
+            </p>
+        </header>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8">
+            <!-- Connection Section -->
+            <div class="border-b border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center">
+                        <div class="mr-4 w-12 h-12 flex items-center justify-center">
+                            <div id="statusIndicator" class="w-4 h-4 rounded-full bg-gray-500"></div>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold">Connection Status</h2>
+                            <p id="statusText" class="text-gray-600 dark:text-gray-400">Not connected</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button id="settingsBtn" class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:ring-2 focus:ring-primary focus:outline-none">
+                            <i data-feather="settings" class="w-5 h-5"></i>
+                        </button>
+                        <button id="connectBtn" class="px-6 py-2.5 rounded-lg bg-primary hover:bg-blue-700 text-white font-medium transition-colors focus:ring-2 focus:ring-blue-300 focus:outline-none">
+                            Connect
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Configuration Modal -->
+            <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+                <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full mx-4 p-6 transform transition-all duration-300">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-xl font-bold">Connection Settings</h3>
+                        <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Host</label>
+                            <input id="hostInput" type="text" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent" value="127.0.0.1">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Port</label>
+                            <input id="portInput" type="number" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent" value="11434">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-6 space-x-3">
+                        <button id="cancelSettings" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                        <button id="saveSettings" class="px-4 py-2 rounded-lg bg-primary hover:bg-blue-700 text-white font-medium transition-colors">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Display -->
+            <div class="p-1 pb-0">
+                <div class="bg-gray-100 dark:bg-gray-750 rounded-t-lg p-4 flex justify-between items-center">
+                    <h3 class="font-medium">Service Response Log</h3>
+                    <button id="clearLogBtn" class="text-xs px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Clear Log</button>
+                </div>
+                <div id="logContainer" class="bg-white dark:bg-gray-800 rounded-b-lg h-64 overflow-y-auto scrollbar-hidden border border-t-0 border-gray-200 dark:border-gray-700">
+                    <div class="py-3 px-4 text-center text-gray-500 italic">No messages yet. Connect to start communication.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Send Command</h3>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input id="messageInput" type="text" placeholder="Enter your command..." 
+                           class="flex-grow px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+                           disabled>
+                    <button id="sendBtn" 
+                            class="px-6 py-3 rounded-lg bg-primary hover:bg-blue-700 text-white font-medium transition-colors focus:ring-2 focus:ring-blue-300 focus:outline-none disabled:opacity-50"
+                            disabled>
+                        Send Command
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize icons
+            feather.replace();
+            
+            // DOM elements
+            const connectBtn = document.getElementById('connectBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const clearLogBtn = document.getElementById('clearLogBtn');
+            const messageInput = document.getElementById('messageInput');
+            const logContainer = document.getElementById('logContainer');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const settingsModal = document.getElementById('settingsModal');
+            const hostInput = document.getElementById('hostInput');
+            const portInput = document.getElementById('portInput');
+            const saveSettings = document.getElementById('saveSettings');
+            const cancelSettings = document.getElementById('cancelSettings');
+            const closeModal = document.getElementById('closeModal');
+            
+            // State variables
+            let isConnected = false;
+            let websocket = null;
+            const config = {
+                host: '127.0.0.1',
+                port: '11434',
+                type: 'ws'
+            };
+            
+            // Toggle settings modal
+            settingsBtn.addEventListener('click', () => {
+                settingsModal.classList.remove('hidden');
+                hostInput.value = config.host;
+                portInput.value = config.port;
+            });
+            
+            const closeSettings = () => settingsModal.classList.add('hidden');
+            
+            closeModal.addEventListener('click', closeSettings);
+            cancelSettings.addEventListener('click', closeSettings);
+            
+            // Save configuration to localStorage
+            saveSettings.addEventListener('click', () => {
+                config.host = hostInput.value;
+                config.port = portInput.value;
+                
+                localStorage.setItem('serviceConnectorConfig', JSON.stringify(config));
+                closeSettings();
+                logMessage('Configuration updated', 'system');
+            });
+            
+            // Load configuration or set default
+            function loadConfig() {
+                const savedConfig = localStorage.getItem('serviceConnectorConfig');
+                if (savedConfig) {
+                    Object.assign(config, JSON.parse(savedConfig));
+                }
+            }
+            
+            // Control connection
+            connectBtn.addEventListener('click', () => {
+                if (!isConnected) {
+                    connectToService();
+                } else {
+                    disableForm();
+                    websocket.close();
+                }
+            });
+            
+            // Send command
+            sendBtn.addEventListener('click', sendCommand);
+            
+            // Send command on Enter
+            messageInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && isConnected && messageInput.value.trim()) {
+                    sendCommand();
+                }
+            });
+            
+            // Handle sending commands
+            function sendCommand() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                
+                try {
+                    websocket.send(message);
+                    logMessage(`You → ${message}`, 'sent');
+                    messageInput.value = '';
+                    messageInput.focus();
+                } catch (error) {
+                    logMessage(`Error sending: ${error.message}`, 'error');
+                    enableForm(false); // Disable form if send fails
+                }
+            }
+            
+            // Clear log
+            clearLogBtn.addEventListener('click', () => {
+                logContainer.innerHTML = '<div class="py-3 px-4 text-center text-gray-500 italic">No messages yet. Connect to start communication.</div>';
+            });
+            
+            // WebSocket connection
+            function connectToService() {
+                loadConfig();
+                enableForm(false); // Disabling temporarily while connecting
+                logMessage('Connecting to service...', 'system');
+                
+                try {
+                    const url = `${config.type}://${config.host}:${config.port}`;
+                    websocket = new WebSocket(url);
+                    
+                    websocket.onopen = () => {
+                        isConnected = true;
+                        enableForm(true);
+                        updateConnectionStatus('Connected', 'connection-status-connected bg-success');
+                        logMessage('Connection successful', 'system');
+                    };
+                    
+                    websocket.onmessage = (event) => {
+                        logMessage(`Service → ${event.data}`, 'received');
+                    };
+                    
+                    websocket.onerror = (error) => {
+                        const errorMessage = websocket.readyState === WebSocket.OPEN ? 
+                            'WebSocket error: ' + error.message : 
+                            'Connection failed: Make sure the service is running and accessible at ' + config.host + ':' + config.port;
+                        
+                        logMessage(errorMessage, 'error');
+                        websocket.close();
+                    };
+                    
+                    websocket.onclose = () => {
+                        isConnected = false;
+                        enableForm(false);
+                        updateConnectionStatus('Disconnected', 'bg-gray-500');
+                        websocket = null;
+                    };
+                    
+                    // Set timeout for connection attempt
+                    setTimeout(() => {
+                        if (!isConnected && websocket.readyState !== WebSocket.OPEN) {
+                            logMessage('Connection timeout: Service not responding', 'error');
+                            websocket.close();
+                        }
+                    }, 5000);
+                    
+                } catch (error) {
+                    logMessage(`Connection Error: ${error.message}`, 'error');
+                    enableForm(false);
+                }
+            }
+            
+            // Log messages to container
+            function logMessage(message, type = 'system') {
+                if (logContainer.children.length === 1 && 
+                    logContainer.children[0].classList.contains('text-center')) {
+                    logContainer.innerHTML = '';
+                }
+                
+                // Generate timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+                
+                // Create log entry
+                const entry = document.createElement('div');
+                entry.className = 'log-entry p-4 border-b border-gray-100 dark:border-gray-700';
+                
+                // Color coding for message types
+                const styles = {
+                    system: 'text-gray-600 dark:text-gray-400',
+                    sent: 'text-secondary dark:text-blue-300 font-medium',
+                    received: 'text-success dark:text-green-300 font-medium',
+                    error: 'text-danger dark:text-red-300 font-medium'
+                };
+                
+                // Icon mapping
+                const icons = {
+                    system: 'info',
+                    sent: 'arrow-up-right',
+                    received: 'arrow-down-left',
+                    error: 'alert-triangle'
+                };
+                
+                entry.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="mr-3 mt-0.5 text-gray-400 dark:text-gray-500">
+                            <i data-feather="${icons[type] || 'message-square'}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="${styles[type] || 'text-gray-600 dark:text-gray-400'}">
+                                ${message}
+                            </div>
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                ${timestamp}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                logContainer.appendChild(entry);
+                
+                // Scroll to the bottom of log container
+                logContainer.scrollTop = logContainer.scrollHeight;
+                
+                // Re-render icons
+                feather.replace();
+            }
+            
+            // Update connection status
+            function updateConnectionStatus(text, classes) {
+                statusText.textContent = text;
+                statusIndicator.className = 'w-4 h-4 rounded-full ' + classes;
+            }
+            
+            // Handle form enable/disable
+            function enableForm(connected) {
+                isConnected = connected;
+                connectBtn.textContent = isConnected ? 'Disconnect' : 'Connect';
+                
+                if (isConnected) {
+                    sendBtn.disabled = false;
+                    messageInput.disabled = false;
+                    messageInput.placeholder = 'Enter your command...';
+                } else {
+                    sendBtn.disabled = true;
+                    messageInput.disabled = true;
+                    messageInput.placeholder = 'Connect to enable command input';
+                }
+            }
+            
+            // Initial disable form on load since not connected
+            function disableForm() {
+                isConnected = false;
+                connectBtn.disabled = true;
+                connectBtn.textContent = 'Disconnecting...';
+            }
+            
+            // Initialize form state
+            enableForm(false);
+            loadConfig();
+        });
+    </script>
+</body>
+</html>
