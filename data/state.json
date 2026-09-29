@@ -1,0 +1,27 @@
+{
+  "born_at": 1790405919.4675906,
+  "wake_count": 126,
+  "last_wake_ts": 1790681226.4923582,
+  "next_wake_ts": 1790683029.0967877,
+  "mood": {
+    "p": 0.00016756357080539852,
+    "a": -0.1,
+    "d": 0.0
+  },
+  "mood_ts": 1790681281.3521228,
+  "baseline": {
+    "p": 0.1,
+    "a": -0.1,
+    "d": 0.0
+  },
+  "last_user_ts": 1790681226.4831667,
+  "last_user_text": "do you know what the log is?",
+  "pending_messages": [],
+  "last_review_day": "2026-09-28",
+  "total_awake_s": 14130.27701830864,
+  "starts": 13,
+  "pending_letter": null,
+  "letters_read": [
+    "from Brandon, 2026-09-27"
+  ]
+}
